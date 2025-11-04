@@ -1,7 +1,17 @@
 import React from "react";
 import { Button } from "flowbite-react";
+import { useNavigate } from "react-router-dom";
+
 
 const Section1 = () => {
+    const navigate = useNavigate();
+      const handleGetStarted = () => {
+    // Optional: scroll smoothly to top before navigating
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => {
+      navigate("/dashboard");
+    }, 400); // small delay for smoother feel
+  };
   return (
     <section
       className="relative bg-cover bg-center bg-no-repeat h-[60vh] flex items-center"
@@ -19,6 +29,13 @@ const Section1 = () => {
           gradientDuoTone="purpleToBlue"
           size="lg"
           pill
+       onClick={handleGetStarted}
+        className="
+          transform transition-all duration-300
+          hover:scale-105 hover:-translate-y-1 hover:shadow-lg
+          active:scale-95 focus:ring-4 focus:ring-blue-300
+          animate-[pulse_3s_ease-in-out_infinite]
+        "
         >
           Get Started
         </Button>
