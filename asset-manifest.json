@@ -1,0 +1,12 @@
+{
+  "files": {
+    "main.css": "/gracearop/finance-tracker/static/css/main.6dd00a81.css",
+    "main.js": "/gracearop/finance-tracker/static/js/main.d8aa1e4b.js",
+    "static/js/206.5e38ded3.chunk.js": "/gracearop/finance-tracker/static/js/206.5e38ded3.chunk.js",
+    "index.html": "/gracearop/finance-tracker/index.html"
+  },
+  "entrypoints": [
+    "static/css/main.6dd00a81.css",
+    "static/js/main.d8aa1e4b.js"
+  ]
+}
