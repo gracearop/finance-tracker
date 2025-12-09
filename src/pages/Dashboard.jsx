@@ -1,51 +1,53 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import IncomeForm from "../components/IncomeForm";
 import ExpenseForm from "../components/ExpenseForm";
 import ChartDisplay from "../components/ChartDisplay";
 import SummaryReport from "../components/SummaryReport";
-import { getCurrentUser, updateUserData } from "../utils/auth";
+import { AuthContext } from "../context/AuthContext";
 
 const Dashboard = () => {
-  const [user, setUser] = useState(null);
+  const { user, updateUserData } = useContext(AuthContext);
+
   const [userData, setUserData] = useState({ income: {}, expense: {} });
   const [selectedYear, setSelectedYear] = useState("All");
-  
-  useEffect(() => {
-    const currentUser = getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-      setUserData(currentUser.data || { income: {}, expense: {} });
-    }
-  
 
-    // 🟡 Load last selected year from localStorage
+  useEffect(() => {
+    if (user) {
+      setUserData(user.data || { income: {}, expense: {} });
+    }
+
+    // Load last selected year
     const savedYear = localStorage.getItem("selectedYear");
     if (savedYear) {
       setSelectedYear(savedYear);
     }
-  }, []);
+  }, [user]);
 
-  // 🟢 Whenever user changes the year, save it
+  // Year dropdown handler
   const handleYearChange = (year) => {
     setSelectedYear(year);
     localStorage.setItem("selectedYear", year);
   };
 
+  // Handle adding income or expense
   const handleDataUpdate = (type, entry) => {
     if (!user) return;
+
+    // Create a key for this entry
+    const timestamp = Date.now();
 
     const updatedData = {
       ...userData,
       [type]: {
         ...userData[type],
-        [Date.now()]: entry,
+        [timestamp]: entry,
       },
     };
 
-    const updatedUser = { ...user, data: updatedData };
     setUserData(updatedData);
-    setUser(updatedUser);
-    updateUserData(updatedUser);
+
+    // Save to AuthContext → saves inside this user only
+    updateUserData(type, entry);
   };
 
   return (
@@ -86,17 +88,16 @@ const Dashboard = () => {
           Financial Overview {user ? `for ${user.name}` : ""}
         </h2>
 
-        {userData && (Object.keys(userData.income).length > 0 ||
-                      Object.keys(userData.expense).length > 0) ? (
+        {userData &&
+        (Object.keys(userData.income).length > 0 ||
+          Object.keys(userData.expense).length > 0) ? (
           <>
-            {/* <ChartDisplay userData={userData} />
-            <SummaryReport userData={userData} /> */}
             <ChartDisplay userData={userData} selectedYear={selectedYear} />
             <SummaryReport
               userData={userData}
               selectedYear={selectedYear}
               onYearChange={handleYearChange}
-             />
+            />
           </>
         ) : (
           <p className="text-gray-500">No data yet. Add some records above.</p>

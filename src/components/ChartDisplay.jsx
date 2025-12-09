@@ -11,27 +11,32 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const COLORS = ["#00C49F", "#FF8042", "#0088FE", "#FFBB28", "#845EC2", "#D65DB1"];
 
-const ChartDisplay = ({ userData }) => {
+const ChartDisplay = ({ userData, selectedYear }) => {
   const [chartData, setChartData] = useState([]);
   const [chartType, setChartType] = useState("area");
 
-  // Transform userData to monthly totals
   useEffect(() => {
     if (userData) prepareData();
-  }, [userData]);
+  }, [userData, selectedYear]);
 
+  // transform & filter data
   const prepareData = () => {
     const incomeEntries = Object.values(userData.income || {});
     const expenseEntries = Object.values(userData.expense || {});
     const grouped = {};
 
-    // Helper to add values grouped by month & year
     const addRecord = (entry, type) => {
       const month = entry.month || "Unknown";
       const year = entry.year || new Date().getFullYear();
-      const key = `${month}-${year}`;
 
+      // YEAR FILTER ⬇️  
+      if (selectedYear !== "All" && String(year) !== String(selectedYear)) {
+        return; // ignore this entry
+      }
+
+      const key = `${month}-${year}`;
       if (!grouped[key]) grouped[key] = { month, year, income: 0, expense: 0 };
+
       grouped[key][type] += Number(entry.amount) || 0;
     };
 
@@ -64,7 +69,7 @@ const ChartDisplay = ({ userData }) => {
   if (!chartData.length) {
     return (
       <div className="text-center text-gray-500 mt-6">
-        No financial data yet — add some income or expenses.
+        No financial data for this period.
       </div>
     );
   }
@@ -127,7 +132,7 @@ const ChartDisplay = ({ userData }) => {
                 </LineChart>
               )}
 
-              {/* === COLUMN (VERTICAL BAR) CHART === */}
+              {/* === COLUMN CHART === */}
               {chartType === "column" && (
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -140,7 +145,7 @@ const ChartDisplay = ({ userData }) => {
                 </BarChart>
               )}
 
-              {/* === BAR (HORIZONTAL) CHART === */}
+              {/* === BAR CHART === */}
               {chartType === "bar" && (
                 <BarChart layout="vertical" data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />

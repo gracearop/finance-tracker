@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const SummaryReport = ({ userData }) => {
-  const [summary, setSummary] = useState({ totalIncome: 0, totalExpense: 0, balance: 0 });
+const SummaryReport = ({ userData, selectedYear, onYearChange }) => {
+  const [summary, setSummary] = useState({
+    totalIncome: 0,
+    totalExpense: 0,
+    balance: 0,
+  });
+
   const [yearlyBreakdown, setYearlyBreakdown] = useState([]);
-  const [selectedYear, setSelectedYear] = useState("all");
   const [health, setHealth] = useState({ score: 0, label: "No data" });
 
   useEffect(() => {
     if (userData) calculateSummary();
-  }, [userData]);
+  }, [userData, selectedYear]);
 
   const calculateSummary = () => {
     const incomeData = Object.values(userData.income || {});
@@ -24,7 +28,12 @@ const SummaryReport = ({ userData }) => {
     incomeData.forEach((record) => {
       const year = record.year || currentYear;
       const amount = Number(record.amount) || 0;
+
+      // YEAR FILTER ⬇️
+      if (selectedYear !== "All" && String(year) !== String(selectedYear)) return;
+
       totalIncome += amount;
+
       if (!yearlyData[year]) yearlyData[year] = { income: 0, expense: 0 };
       yearlyData[year].income += amount;
     });
@@ -32,7 +41,12 @@ const SummaryReport = ({ userData }) => {
     expenseData.forEach((record) => {
       const year = record.year || currentYear;
       const amount = Number(record.amount) || 0;
+
+      // YEAR FILTER ⬇️
+      if (selectedYear !== "All" && String(year) !== String(selectedYear)) return;
+
       totalExpense += amount;
+
       if (!yearlyData[year]) yearlyData[year] = { income: 0, expense: 0 };
       yearlyData[year].expense += amount;
     });
@@ -40,12 +54,31 @@ const SummaryReport = ({ userData }) => {
     const balance = totalIncome - totalExpense;
     setSummary({ totalIncome, totalExpense, balance });
 
-    const breakdownArray = Object.entries(yearlyData).map(([year, data]) => ({
+    // Create full year breakdown for dropdown (ALL YEARS)
+    const fullBreakdown = {};
+    incomeData.forEach((record) => {
+      const year = record.year || currentYear;
+      const amount = Number(record.amount) || 0;
+
+      if (!fullBreakdown[year]) fullBreakdown[year] = { income: 0, expense: 0 };
+      fullBreakdown[year].income += amount;
+    });
+
+    expenseData.forEach((record) => {
+      const year = record.year || currentYear;
+      const amount = Number(record.amount) || 0;
+
+      if (!fullBreakdown[year]) fullBreakdown[year] = { income: 0, expense: 0 };
+      fullBreakdown[year].expense += amount;
+    });
+
+    const breakdownArray = Object.entries(fullBreakdown).map(([year, data]) => ({
       year,
       income: data.income,
       expense: data.expense,
       balance: data.income - data.expense,
     }));
+
     breakdownArray.sort((a, b) => b.year - a.year);
     setYearlyBreakdown(breakdownArray);
 
@@ -53,13 +86,12 @@ const SummaryReport = ({ userData }) => {
   };
 
   const calculateHealth = (income, expense) => {
-    if (income === 0 && expense === 0) {
-      setHealth({ score: 0, label: "No data" });
-      return;
-    }
+    if (income === 0 && expense === 0)
+      return setHealth({ score: 0, label: "No data" });
 
     const ratio = expense / income;
     const score = Math.max(0, Math.min(100, 100 - ratio * 100));
+
     let label = "";
     if (score >= 80) label = "Excellent 💪";
     else if (score >= 60) label = "Good 😊";
@@ -70,9 +102,9 @@ const SummaryReport = ({ userData }) => {
   };
 
   const filteredBreakdown =
-    selectedYear === "all"
+    selectedYear === "All"
       ? yearlyBreakdown
-      : yearlyBreakdown.filter((y) => y.year === selectedYear);
+      : yearlyBreakdown.filter((y) => String(y.year) === String(selectedYear));
 
   return (
     <motion.div
@@ -83,13 +115,14 @@ const SummaryReport = ({ userData }) => {
     >
       <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center justify-between">
         📊 Summary Report
+
         {yearlyBreakdown.length > 0 && (
           <select
             value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
+            onChange={(e) => onYearChange(e.target.value)}
             className="border border-gray-300 rounded-lg p-2 text-gray-700 hover:shadow-sm transition-all"
           >
-            <option value="all">All Years</option>
+            <option value="All">All Years</option>
             {yearlyBreakdown.map((y) => (
               <option key={y.year} value={y.year}>
                 {y.year}
@@ -138,6 +171,7 @@ const SummaryReport = ({ userData }) => {
         <h3 className="text-xl font-semibold text-gray-700 mb-4">
           📅 Yearly Breakdown
         </h3>
+
         <AnimatePresence mode="wait">
           {filteredBreakdown.length > 0 ? (
             <motion.div
@@ -151,40 +185,21 @@ const SummaryReport = ({ userData }) => {
               <table className="min-w-full border border-gray-200 rounded-lg">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="p-3 text-left text-gray-700 font-medium">
-                      Year
-                    </th>
-                    <th className="p-3 text-right text-gray-700 font-medium">
-                      Income (₦)
-                    </th>
-                    <th className="p-3 text-right text-gray-700 font-medium">
-                      Expense (₦)
-                    </th>
-                    <th className="p-3 text-right text-gray-700 font-medium">
-                      Balance (₦)
-                    </th>
+                    <th className="p-3 text-left text-gray-700 font-medium">Year</th>
+                    <th className="p-3 text-right text-gray-700 font-medium">Income (₦)</th>
+                    <th className="p-3 text-right text-gray-700 font-medium">Expense (₦)</th>
+                    <th className="p-3 text-right text-gray-700 font-medium">Balance (₦)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredBreakdown.map((item) => (
-                    <tr
-                      key={item.year}
-                      className="border-t border-gray-200 hover:bg-gray-50"
-                    >
-                      <td className="p-3 font-medium text-gray-800">
-                        {item.year}
-                      </td>
-                      <td className="p-3 text-right text-blue-700">
-                        {item.income.toLocaleString()}
-                      </td>
-                      <td className="p-3 text-right text-red-700">
-                        {item.expense.toLocaleString()}
-                      </td>
+                    <tr key={item.year} className="border-t border-gray-200 hover:bg-gray-50">
+                      <td className="p-3 font-medium text-gray-800">{item.year}</td>
+                      <td className="p-3 text-right text-blue-700">{item.income.toLocaleString()}</td>
+                      <td className="p-3 text-right text-red-700">{item.expense.toLocaleString()}</td>
                       <td
                         className={`p-3 text-right font-semibold ${
-                          item.balance >= 0
-                            ? "text-green-700"
-                            : "text-yellow-700"
+                          item.balance >= 0 ? "text-green-700" : "text-yellow-700"
                         }`}
                       >
                         {item.balance.toLocaleString()}
@@ -196,18 +211,18 @@ const SummaryReport = ({ userData }) => {
             </motion.div>
           ) : (
             <p className="text-gray-500 text-center mt-4">
-              No financial records yet. Add some income or expenses to see your
-              summary.
+              No financial records yet for this year.
             </p>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Financial Health Indicator */}
+      {/* Financial Health */}
       <div className="mt-10 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl shadow-inner">
         <h3 className="text-xl font-semibold text-gray-800 mb-4">
           💡 Financial Health Indicator
         </h3>
+
         {health.label !== "No data" ? (
           <>
             <div className="w-full bg-gray-200 rounded-full h-4 mb-3">
@@ -226,6 +241,7 @@ const SummaryReport = ({ userData }) => {
                 }`}
               ></motion.div>
             </div>
+
             <p className="text-gray-700 font-medium text-center">
               {health.label} —{" "}
               <span className="text-lg">{health.score.toFixed(0)}%</span> healthy
